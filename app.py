@@ -2,7 +2,6 @@ import streamlit as st
 from sentence_transformers import SentenceTransformer
 import chromadb
 from langchain_groq import ChatGroq
-import os
 import tiktoken
 import os
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
@@ -17,7 +16,7 @@ def load_model():
 
 @st.cache_resource
 def load_collection():
-    client = chromadb.PersistentClient(path=r"C:\Users\Administrator\OneDrive\Documents\codes\rag\deeplearningchromadb")
+    client = chromadb.PersistentClient(path="./deeplearningchromadb")
     return client.get_collection("deep_learning_book")
 
 @st.cache_resource
