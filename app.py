@@ -90,15 +90,33 @@ synthesize an answer from the available information.
 If the context is completely unrelated, say 'I could not find this in the textbook.'
 Context:
 {context}
-Conversation History:
+Summary of earlier conversation:
+{st.session_state.chat_summary}
+Recent Conversation History:
 {history_text}
 Question: {question}
 Answer:"""
+def update_summary(old_messages, existing_summary):
+    text_to_summarize = "\n".join([
+        f"{msg['role'].capitalize()}: {msg['content']}"
+        for msg in old_messages
+    ])
+    summarization_prompt = f"""Summarize the following conversation in 1 to 5 concise lines,
+capturing only the key facts, questions, and topics discussed. Merge it with the existing summary
+if relevant, avoiding repetition.
+Existing summary:
+{existing_summary}
+New conversation to incorporate:
+{text_to_summarize}
+Updated summary:"""
+    response = llm.invoke(summarization_prompt)
+    return response.content
 
 # ── Session state ─────────────────────────────────────────────────────────────
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
+if "chat_summary" not in st.session_state:
+    st.session_state.chat_summary = ""
 # ── Display chat history ──────────────────────────────────────────────────────
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -132,3 +150,9 @@ if question := st.chat_input("Ask a question about Deep Learning..."):
                 st.markdown(doc[:200] + "...")
                 st.divider()
     st.session_state.messages.append({"role": "assistant", "content": answer})
+    if len(st.session_state.messages) > 6:
+        messages_to_summarize = st.session_state.messages[:-6]
+        st.session_state.chat_summary = update_summary(
+            messages_to_summarize, st.session_state.chat_summary
+        )
+        st.session_state.messages = st.session_state.messages[-6:]
